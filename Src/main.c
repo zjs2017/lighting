@@ -63,6 +63,103 @@ static void MX_GPIO_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+#define LIGHTING_EV_ON    0x00000001
+#define LIGHTING_EV_OFF   0x00000002
+
+#define LIGHTING_EV_ON_TIME  0x00000004
+#define LIGHTING_EV_OFF_TIME 0x00000008
+#define LIGHTING_EV_SEC      0x00000010
+
+
+int lt_status = LIGHTING_OFF;
+int lt_event = 0;
+
+uint32_t lt_ms = 0;
+int lt_sec = 0;
+
+uint32_t lt_on_last_sec = 0;
+uint32_t lt_on_sec = 0;
+int lt_on_matched_count= 3;
+int lt_on_fixed = 0;
+
+uint32_t lt_off_last_sec = 0;
+uint32_t lt_off_sec = 0;
+int lt_off_itv_sec = 5;
+
+int interval(int cur, int last)
+{
+    if(cur > last)
+    {
+        return cur - last;
+    }
+    else
+    {
+        return last - cur;
+    }
+}
+
+int time_sec_interval(int cur_sec, int last_sec)
+{
+    int sec;
+
+    if(cur_sec == 0 || last_sec == 0)
+    {
+        return -1;
+    }
+
+    return interval(cur_sec, last_sec);
+}
+
+void lighting_ev_on_time_process(void)
+{
+    int itv;
+
+    itv = time_sec_interval(lt_on_sec, lt_on_last_sec);
+
+    if(!lt_on_fixed)
+    {
+        if(itv > 0 && itv < 3)
+        {
+            lt_on_matched_count++;
+            if(lt_on_matched_count > 3)
+            {
+                lt_on_fixed = 1;
+            }
+        }
+        else
+        {
+            lt_on_matched_count--;
+            lt_on_matched_count = lt_on_matched_count > 0 ? 
+                lt_on_matched_count : 0;
+        }
+    }
+
+    lt_on_last_sec = lt_on_sec;
+}
+
+void lighting_ev_process(void)
+{
+    if(lt_on_fixed)
+    {
+        if((lt_on_sec == 3) && (lt_off_sec == 10))
+        { 
+            // reset
+            lt_on_fixed = 0;
+            lt_on_matched_count = 0;
+            lt_on_sec = 0;
+            lt_on_last_sec = 0;
+        }
+    }
+}
+
+void display_sec(void)
+{
+    char tmr_buffer[64];
+
+    sprintf(tmr_buffer, "sec: %s", lt_sec);
+
+    OLED_ShowString(0, 0, tmr_buffer, 15);
+}
 
 /* USER CODE END 0 */
 
@@ -105,15 +202,45 @@ int main(void)
     OLED_Init();
     OLED_Clear();
 
-    OLED_ShowString(0, 0, "0.91OLEDTEST", 8);
-    
+    //OLED_ShowString(0, 0, "0.91OLEDTEST", 8);
     while (1)
     {
+        if(lt_event)
+        {
+            lighting_ev_process();
+        
+            if(lt_event & LIGHTING_EV_ON)
+            {
+                OLED_DrawBMP(90, 0, 127, 7, BMP_SRC_LIGHTING_ON);
 
-        /* USER CODE END WHILE */
+                lt_event &= ~LIGHTING_EV_ON;
+            }
 
-        /* USER CODE BEGIN 3 */
+            if(lt_event & LIGHTING_EV_OFF)
+            {
+                OLED_DrawBMP(90, 0, 127, 7, BMP_SRC_LIGHTING_OFF);
 
+                lt_event &= ~LIGHTING_EV_OFF;
+            }
+
+            if(lt_event & LIGHTING_EV_ON_TIME)
+            {
+                lighting_ev_on_time_process();
+                lt_event &= ~LIGHTING_EV_ON_TIME;
+            }
+
+            if(lt_event & LIGHTING_EV_OFF_TIME)
+            {
+                lt_event &= ~LIGHTING_EV_OFF_TIME;
+            }
+
+            if(lt_event & LIGHTING_EV_SEC)
+            {
+                display_sec();
+                
+                lt_event &= ~LIGHTING_EV_SEC;
+            }
+        }
     }
     /* USER CODE END 3 */
 
@@ -208,6 +335,37 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+    if(__HAL_GPIO_EXTI_GET_IT(GPIO_Pin) != RESET)
+    {
+        //lt_status = LIGHTING_EV_ON;
+        lt_event |= (LIGHTING_EV_ON | LIGHTING_EV_OFF_TIME);
+
+        lt_off_sec = lt_sec;
+        //lt_ms = 0;
+    }
+    else
+    {
+        //lt_status = LIGHTING_EV_ON;
+        lt_event |= (LIGHTING_EV_OFF | LIGHTING_EV_ON_TIME);
+
+        lt_on_sec = lt_sec;
+        //lt_ms = 0;
+    }
+}
+
+void HAL_SYSTICK_Callback(void)
+{
+    //lt_ms++;
+    lt_ms++;
+    if(lt_ms > 1000)
+    {
+        lt_ms = 0;
+        lt_sec++;
+        lt_event |= LIGHTING_EV_SEC;
+    }
+}
 
 /* USER CODE END 4 */
 
