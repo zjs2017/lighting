@@ -8,8 +8,8 @@
 /************************************6*8µÄµãÕó************************************/
 extern const unsigned char F6x8[][6];
 extern const unsigned char F8X16[];
-extern const unsigned char BMP_SRC_LIGHTING_ON[128];
-extern const unsigned char BMP_SRC_LIGHTING_OFF[128];
+extern unsigned char BMP_SRC_LIGHTING_ON[128];
+extern unsigned char BMP_SRC_LIGHTING_OFF[128];
 
 #endif
 

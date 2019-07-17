@@ -41,7 +41,7 @@
 #include "stm32f1xx_hal.h"
 
 #include "oled.h"
-
+#include "oledfont.h"
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
@@ -71,7 +71,7 @@ static void MX_GPIO_Init(void);
 #define LIGHTING_EV_SEC      0x00000010
 
 
-int lt_status = LIGHTING_OFF;
+// int lt_status = LIGHTING_OFF;
 int lt_event = 0;
 
 uint32_t lt_ms = 0;
@@ -100,8 +100,6 @@ int interval(int cur, int last)
 
 int time_sec_interval(int cur_sec, int last_sec)
 {
-    int sec;
-
     if(cur_sec == 0 || last_sec == 0)
     {
         return -1;
@@ -156,7 +154,7 @@ void display_sec(void)
 {
     char tmr_buffer[64];
 
-    sprintf(tmr_buffer, "sec: %s", lt_sec);
+    sprintf(tmr_buffer, "sec: %d", lt_sec);
 
     OLED_ShowString(0, 0, tmr_buffer, 15);
 }
@@ -168,6 +166,8 @@ void display_sec(void)
   *
   * @retval None
   */
+extern unsigned char BMP1[];
+
 int main(void)
 {
     /* USER CODE BEGIN 1 */
@@ -211,14 +211,14 @@ int main(void)
         
             if(lt_event & LIGHTING_EV_ON)
             {
-                OLED_DrawBMP(90, 0, 127, 7, BMP_SRC_LIGHTING_ON);
+                OLED_DrawBMP(96, 0, 128, 8, BMP_SRC_LIGHTING_ON);
 
                 lt_event &= ~LIGHTING_EV_ON;
             }
 
             if(lt_event & LIGHTING_EV_OFF)
             {
-                OLED_DrawBMP(90, 0, 127, 7, BMP_SRC_LIGHTING_OFF);
+                OLED_DrawBMP(97, 0, 128, 8, BMP_SRC_LIGHTING_OFF);
 
                 lt_event &= ~LIGHTING_EV_OFF;
             }
@@ -236,7 +236,7 @@ int main(void)
 
             if(lt_event & LIGHTING_EV_SEC)
             {
-                display_sec();
+                //display_sec();
                 
                 lt_event &= ~LIGHTING_EV_SEC;
             }
@@ -337,12 +337,13 @@ static void MX_GPIO_Init(void)
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 {
-    if(__HAL_GPIO_EXTI_GET_IT(GPIO_Pin) != RESET)
+    if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == GPIO_PIN_RESET)
     {
         //lt_status = LIGHTING_EV_ON;
         lt_event |= (LIGHTING_EV_ON | LIGHTING_EV_OFF_TIME);
 
         lt_off_sec = lt_sec;
+        lt_sec = 0;
         //lt_ms = 0;
     }
     else
@@ -351,6 +352,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
         lt_event |= (LIGHTING_EV_OFF | LIGHTING_EV_ON_TIME);
 
         lt_on_sec = lt_sec;
+        lt_sec = 0;
         //lt_ms = 0;
     }
 }
