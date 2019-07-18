@@ -73,6 +73,7 @@ static void MX_GPIO_Init(void);
 
 // int lt_status = LIGHTING_OFF;
 int lt_event = 0;
+int lt_sec_event = 0;
 
 uint32_t lt_ms = 0;
 int lt_sec = 0;
@@ -81,6 +82,7 @@ uint32_t lt_on_last_sec = 0;
 uint32_t lt_on_sec = 0;
 int lt_on_matched_count= 3;
 int lt_on_fixed = 0;
+int lt_on_fixed_sec = 0;
 
 uint32_t lt_off_last_sec = 0;
 uint32_t lt_off_sec = 0;
@@ -122,6 +124,8 @@ void lighting_ev_on_time_process(void)
             if(lt_on_matched_count > 3)
             {
                 lt_on_fixed = 1;
+                lt_on_fixed_sec = lt_on_sec;
+                display_fixed_sec();
             }
         }
         else
@@ -147,6 +151,8 @@ void lighting_ev_process(void)
             lt_on_sec = 0;
             lt_on_last_sec = 0;
         }
+
+        
     }
 }
 
@@ -154,10 +160,29 @@ void display_sec(void)
 {
     char tmr_buffer[64];
 
-    sprintf(tmr_buffer, "sec: %d", lt_sec);
+    sprintf(tmr_buffer, ":> %d", lt_sec);
 
     OLED_ShowString(0, 0, tmr_buffer, 15);
+
+    if(lt_on_fixed && (lt_on_fixed_sec == lt_sec)))
+    {
+        OLED_ShowString(0, 3, "closing... ", 10);
+    }
+    else
+    {
+        OLED_ShowString(0, 3, "counting...", 10);
+    }
 }
+
+void display_fixed_sec(void)
+{
+    char tmr_buffer[64];
+
+    sprintf(tmr_buffer, ":> %d", lt_on_fixed_sec);
+
+    OLED_ShowString(0, 1, tmr_buffer, 15);
+}
+
 
 /* USER CODE END 0 */
 
@@ -236,7 +261,7 @@ int main(void)
 
             if(lt_event & LIGHTING_EV_SEC)
             {
-                //display_sec();
+                display_sec();
                 
                 lt_event &= ~LIGHTING_EV_SEC;
             }
@@ -340,7 +365,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == GPIO_PIN_RESET)
     {
         //lt_status = LIGHTING_EV_ON;
-        lt_event |= (LIGHTING_EV_ON | LIGHTING_EV_OFF_TIME);
+        lt_event = (LIGHTING_EV_ON | LIGHTING_EV_OFF_TIME);
 
         lt_off_sec = lt_sec;
         lt_sec = 0;
@@ -349,7 +374,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     else
     {
         //lt_status = LIGHTING_EV_ON;
-        lt_event |= (LIGHTING_EV_OFF | LIGHTING_EV_ON_TIME);
+        lt_event = (LIGHTING_EV_OFF | LIGHTING_EV_ON_TIME);
 
         lt_on_sec = lt_sec;
         lt_sec = 0;
@@ -365,7 +390,7 @@ void HAL_SYSTICK_Callback(void)
     {
         lt_ms = 0;
         lt_sec++;
-        lt_event |= LIGHTING_EV_SEC;
+        lt_sec_event = 1;
     }
 }
 
