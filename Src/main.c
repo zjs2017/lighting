@@ -259,11 +259,11 @@ int main(void)
                 lt_event &= ~LIGHTING_EV_OFF_TIME;
             }
 
-            if(lt_event & LIGHTING_EV_SEC)
+            if(lt_sec_event == 1)
             {
                 display_sec();
                 
-                lt_event &= ~LIGHTING_EV_SEC;
+                lt_sec_event = 0;
             }
         }
     }
