@@ -127,7 +127,7 @@ void lighting_ev_on_time_process(void)
             {
                 lt_on_fixed = 1;
                 lt_on_fixed_sec = lt_on_sec;
-                display_fixed_sec();
+                // display_fixed_sec();
             }
         }
         else
@@ -147,7 +147,7 @@ void lighting_ev_process(void)
     {
         if((lt_on_sec == 3) && (lt_off_sec == 10))
         { 
-            OLED_ShowString(0, 1, "          ", 10);
+            //OLED_ShowString(0, 1, "          ", 10);
             // reset
             lt_on_fixed = 0;
             lt_on_matched_count = 0;
@@ -157,32 +157,108 @@ void lighting_ev_process(void)
     }
 }
 
+void display_line0(int sec)
+{
+    char line[64];
+
+    sprintf(line, "> %d     ", sec);
+    OLED_ShowString(0, 0, line, 10);
+}
+
+void display_line1(int sec)
+{
+    char line[64];
+
+    sprintf(line, "> %d     ", sec);
+    OLED_ShowString(0, 1, line, 10);
+}
+
+void display_line2(int flag)
+{
+    char line[64];
+
+    if(flag)
+    {
+        OLED_ShowString(0, 2, "> off     ", 10);
+    }
+    else
+    {
+        OLED_ShowString(0, 2, ">         ", 10);
+    }
+}
+
+void display_line3(void)
+{
+}
+
+
+void display_text(void)
+{
+    if(!lt_on_fixed)
+    {
+        display_line0(lt_sec);
+        display_line1(0);
+        display_line2(0);
+        display_line3();
+    }
+    else
+    {
+        if(lt_on_fixed_sec >= lt_sec)
+        {
+            display_line0(lt_on_fixed_sec - lt_sec);
+            display_line1(lt_on_fixed_sec);
+            display_line2(0);
+            display_line3();
+        }
+        else
+        {
+            display_line0(0);
+            display_line1(lt_on_fixed_sec);
+            display_line2(0);
+            display_line3();
+        }
+    }
+}
+
+/*
 void display_sec(void)
 {
     char tmr_buffer[64];
 
-    sprintf(tmr_buffer, ":> %d   ", lt_sec);
-
-    OLED_ShowString(0, 0, tmr_buffer, 15);
-
-    if(lt_on_fixed && (lt_on_fixed_sec == lt_sec))
+    if(!lt_on_fixed)
     {
-        OLED_ShowString(0, 3, "closing... ", 10);
+        sprintf(tmr_buffer, "> %d   ", lt_sec);
+        OLED_ShowString(0, 0, tmr_buffer, 15);
     }
     else
     {
-        OLED_ShowString(0, 3, "counting...", 10);
+        if(lt_on_fixed_sec >= lt_sec)
+        {
+            sprintf(tmr_buffer, "> %d   ", lt_on_fixed_sec - lt_sec);
+            OLED_ShowString(0, 0, tmr_buffer, 15);
+            
+            sprintf(tmr_buffer, "fixed: %d   ", lt_on_fixed_sec);
+            OLED_ShowString(0, 1, tmr_buffer, 15);
+            OLED_ShowString(0, 3, "> off  ", 15);
+        }
+        else
+        {
+            OLED_ShowString(0, 0, "> 0    ", 15);
+            OLED_ShowString(0, 1, tmr_buffer, 15);
+            OLED_ShowString(0, 3, "> off  ", 15);
+        }
     }
 }
+*/
 
-void display_fixed_sec(void)
+/*void display_fixed_sec(void)
 {
     char tmr_buffer[64];
 
     sprintf(tmr_buffer, "fixed: %d   ", lt_on_fixed_sec);
 
     OLED_ShowString(0, 1, tmr_buffer, 15);
-}
+}*/
 
 
 /* USER CODE END 0 */
@@ -272,8 +348,8 @@ int main(void)
 
         if(lt_sec_event == 1)
         {
-            display_sec();
-            
+            //display_sec();
+            display_text();
             lt_sec_event = 0;
         }
         
@@ -289,47 +365,47 @@ int main(void)
 void SystemClock_Config(void)
 {
 
-  RCC_OscInitTypeDef RCC_OscInitStruct;
-  RCC_ClkInitTypeDef RCC_ClkInitStruct;
+    RCC_OscInitTypeDef RCC_OscInitStruct;
+    RCC_ClkInitTypeDef RCC_ClkInitStruct;
 
     /**Initializes the CPU, AHB and APB busses clocks 
     */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL6;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+    RCC_OscInitStruct.HSEState = RCC_HSE_ON;
+    RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
+    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+    RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL6;
+    if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
+    {
     _Error_Handler(__FILE__, __LINE__);
-  }
+    }
 
     /**Initializes the CPU, AHB and APB busses clocks 
     */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+    RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                            |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+    RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
+    RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+    RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+    RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
-  {
+    if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+    {
     _Error_Handler(__FILE__, __LINE__);
-  }
+    }
 
     /**Configure the Systick interrupt time 
     */
-  HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
+    HAL_SYSTICK_Config(HAL_RCC_GetHCLKFreq()/1000);
 
     /**Configure the Systick 
     */
-  HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
+    HAL_SYSTICK_CLKSourceConfig(SYSTICK_CLKSOURCE_HCLK);
 
-  /* SysTick_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
+    /* SysTick_IRQn interrupt configuration */
+    HAL_NVIC_SetPriority(SysTick_IRQn, 0, 0);
 }
 
 /** Configure pins as 
@@ -342,30 +418,30 @@ void SystemClock_Config(void)
 static void MX_GPIO_Init(void)
 {
 
-  GPIO_InitTypeDef GPIO_InitStruct;
+    GPIO_InitTypeDef GPIO_InitStruct;
 
-  /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOA_CLK_ENABLE();
+    /* GPIO Ports Clock Enable */
+    __HAL_RCC_GPIOA_CLK_ENABLE();
 
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, GPIO_PIN_RESET);
+    /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, GPIO_PIN_RESET);
 
-  /*Configure GPIO pin : PA1 */
-  GPIO_InitStruct.Pin = GPIO_PIN_1;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    /*Configure GPIO pin : PA1 */
+    GPIO_InitStruct.Pin = GPIO_PIN_1;
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : PA2 */
-  GPIO_InitStruct.Pin = GPIO_PIN_2;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    /*Configure GPIO pin : PA2 */
+    GPIO_InitStruct.Pin = GPIO_PIN_2;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+    /* EXTI interrupt init*/
+    HAL_NVIC_SetPriority(EXTI1_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(EXTI1_IRQn);
 
 }
 
@@ -425,12 +501,12 @@ void HAL_SYSTICK_Callback(void)
   */
 void _Error_Handler(char *file, int line)
 {
-  /* USER CODE BEGIN Error_Handler_Debug */
-  /* User can add his own implementation to report the HAL error return state */
-  while(1)
-  {
-  }
-  /* USER CODE END Error_Handler_Debug */
+    /* USER CODE BEGIN Error_Handler_Debug */
+    /* User can add his own implementation to report the HAL error return state */
+    while(1)
+    {
+    }
+    /* USER CODE END Error_Handler_Debug */
 }
 
 #ifdef  USE_FULL_ASSERT
@@ -443,10 +519,10 @@ void _Error_Handler(char *file, int line)
   */
 void assert_failed(uint8_t* file, uint32_t line)
 { 
-  /* USER CODE BEGIN 6 */
-  /* User can add his own implementation to report the file name and line number,
+    /* USER CODE BEGIN 6 */
+    /* User can add his own implementation to report the file name and line number,
      tex: printf("Wrong parameters value: file %s on line %d\r\n", file, line) */
-  /* USER CODE END 6 */
+    /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
 
