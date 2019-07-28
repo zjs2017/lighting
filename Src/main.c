@@ -74,6 +74,7 @@ static void MX_GPIO_Init(void);
 // int lt_status = LIGHTING_OFF;
 int lt_event = 0;
 int lt_sec_event = 0;
+int lt_buzzer_switch = 0;
 
 uint32_t lt_ms = 0;
 int lt_sec = 0;
@@ -177,9 +178,13 @@ void display_line2(int flag)
 {
     char line[64];
 
-    if(flag)
+    if(flag == 1)
     {
         OLED_ShowString(0, 2, "> off     ", 10);
+    }
+    else if(flag == 2)
+    {
+        OLED_ShowString(0, 2, "> time out", 10);
     }
     else
     {
@@ -203,16 +208,40 @@ void display_text(void)
     }
     else
     {
-        if(lt_on_fixed_sec >= lt_sec)
+        if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) == GPIO_PIN_RESET)
         {
-            display_line0(lt_on_fixed_sec - lt_sec);
-            display_line1(lt_on_fixed_sec);
-            display_line2(0);
-            display_line3();
+            if(lt_on_fixed_sec >= (lt_sec + 3))
+            {
+                lt_buzzer_switch = 1;
+            }
+            else if(lt_on_fixed_sec >= lt_sec)
+            {
+                display_line0(lt_on_fixed_sec - lt_sec);
+                display_line1(lt_on_fixed_sec);
+                display_line2(0);
+                display_line3();
+            }
+            else
+            {
+                if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_1) != GPIO_PIN_RESET)
+                {
+                    display_line0(0);
+                    display_line1(lt_on_fixed_sec);
+                    display_line2(1);
+                    display_line3();
+                }
+                else
+                {
+                    display_line0(0);
+                    display_line1(lt_on_fixed_sec);
+                    display_line2(2);
+                    display_line3();
+                }
+            }
         }
         else
         {
-            display_line0(0);
+            display_line0(lt_on_fixed_sec);
             display_line1(lt_on_fixed_sec);
             display_line2(0);
             display_line3();
@@ -325,6 +354,8 @@ int main(void)
                 OLED_DrawBMP(96, 0, 128, 8, BMP_SRC_LIGHTING_ON);
 
                 lt_event &= ~LIGHTING_EV_ON;
+
+                lt_buzzer_switch = 0;
             }
 
             if(lt_event & LIGHTING_EV_OFF)
@@ -351,6 +382,18 @@ int main(void)
             //display_sec();
             display_text();
             lt_sec_event = 0;
+
+            if(lt_buzzer_switch == 1)
+            {
+                if(HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0) == GPIO_PIN_RESET)
+                {
+                    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);
+                }
+                else
+                {
+                    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_RESET);
+                }
+            }
         }
         
     }
@@ -425,6 +468,13 @@ static void MX_GPIO_Init(void)
 
     /*Configure GPIO pin Output Level */
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_2, GPIO_PIN_RESET);
+
+    /*Configure GPIO pin : PA2 */
+    GPIO_InitStruct.Pin = GPIO_PIN_0;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     /*Configure GPIO pin : PA1 */
     GPIO_InitStruct.Pin = GPIO_PIN_1;
